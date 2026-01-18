@@ -1,0 +1,89 @@
+import streamlit as st
+import numpy as np
+import matplotlib.pyplot as plt
+
+from app.state import ensure_state, reveal_environment
+
+
+def render_visuals():
+    """
+    Render post-session visuals during reveal phase.
+    Shows:
+    - True arm probabilities
+    - Human vs agent total reward
+    - Arm pull distributions
+    - Cumulative regret curves
+    """
+    ensure_state()
+    ss = st.session_state
+
+    if not ss.reveal_phase:
+        st.info("Results will appear here once the session ends.")
+        return
+
+    st.header("📊 Results & Reveal")
+
+    # ----------------------------
+    # Reveal environment
+    # ----------------------------
+    env_info = reveal_environment()
+
+    true_probs = env_info["true_probs"]
+    optimal_arm = env_info["optimal_arm"]
+
+    st.subheader("🎯 True Arm Probabilities")
+
+    fig, ax = plt.subplots()
+    ax.bar(range(len(true_probs)), true_probs)
+    ax.axhline(true_probs[optimal_arm], linestyle="--")
+    ax.set_xlabel("Arm")
+    ax.set_ylabel("Reward Probability")
+    ax.set_title("Hidden Reward Distributions")
+    st.pyplot(fig)
+
+    # ----------------------------
+    # Reward comparison
+    # ----------------------------
+    st.subheader("🏆 Human vs Algorithm")
+
+    human_total = ss.human_metrics.total_reward
+    agent_total = ss.agent_metrics.total_reward
+
+    fig, ax = plt.subplots()
+    ax.bar(["Human", "Thompson Agent"], [human_total, agent_total])
+    ax.set_ylabel("Total Reward")
+    ax.set_title("Total Reward Comparison")
+    st.pyplot(fig)
+
+    # ----------------------------
+    # Arm usage
+    # ----------------------------
+    st.subheader("🧠 Arm Selection Behavior")
+
+    fig, ax = plt.subplots()
+    width = 0.35
+    x = np.arange(len(true_probs))
+
+    ax.bar(x - width / 2, ss.human_metrics.pulls, width, label="Human")
+    ax.bar(x + width / 2, ss.agent_metrics.pulls, width, label="Agent")
+
+    ax.set_xlabel("Arm")
+    ax.set_ylabel("Number of Pulls")
+    ax.set_title("Arm Usage Comparison")
+    ax.legend()
+    st.pyplot(fig)
+
+    # ----------------------------
+    # Regret curves
+    # ----------------------------
+    st.subheader("📉 Cumulative Regret")
+
+    fig, ax = plt.subplots()
+    ax.plot(ss.human_metrics.cumulative_regret, label="Human")
+    ax.plot(ss.agent_metrics.cumulative_regret, label="Agent")
+
+    ax.set_xlabel("Pull")
+    ax.set_ylabel("Cumulative Regret")
+    ax.set_title("Regret Over Time")
+    ax.legend()
+    st.pyplot(fig)
