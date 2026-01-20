@@ -12,6 +12,9 @@ def render_student_panel():
     ensure_state()
     ss = st.session_state
 
+    st.subheader("👤 User Profile")
+    ss.user_name = st.text_input("Enter your name", value=ss.user_name, disabled=ss.session_active)
+
     st.subheader("🎰 Choose an Arm")
 
     # Status display

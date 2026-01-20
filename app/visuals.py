@@ -1,33 +1,27 @@
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 
 from app.state import ensure_state, reveal_environment
+from app.leaderboard import get_sorted_leaderboard
 
 
 def render_visuals():
-    """
-    Render post-session visuals during reveal phase.
-    Shows:
-    - True arm probabilities
-    - Human vs agent total reward
-    - Arm pull distributions
-    - Cumulative regret curves
-    """
     ensure_state()
     ss = st.session_state
 
-    if not ss.reveal_phase:
+    # Single source of truth
+    if not ss.reveal_phase or ss.remaining_pulls != 0:
         st.info("Results will appear here once the session ends.")
         return
 
     st.header("📊 Results & Reveal")
 
     # ----------------------------
-    # Reveal environment
+    # Environment reveal
     # ----------------------------
     env_info = reveal_environment()
-
     true_probs = env_info["true_probs"]
     optimal_arm = env_info["optimal_arm"]
 
@@ -44,13 +38,13 @@ def render_visuals():
     # ----------------------------
     # Reward comparison
     # ----------------------------
-    st.subheader("🏆 Human vs Algorithm")
-
-    human_total = ss.human_metrics.total_reward
-    agent_total = ss.agent_metrics.total_reward
+    st.subheader("🏆 You vs Thompson Sampling")
 
     fig, ax = plt.subplots()
-    ax.bar(["Human", "Thompson Agent"], [human_total, agent_total])
+    ax.bar(
+        ["Human", "Agent"],
+        [ss.human_metrics.total_reward, ss.agent_metrics.total_reward]
+    )
     ax.set_ylabel("Total Reward")
     ax.set_title("Total Reward Comparison")
     st.pyplot(fig)
@@ -60,10 +54,10 @@ def render_visuals():
     # ----------------------------
     st.subheader("🧠 Arm Selection Behavior")
 
-    fig, ax = plt.subplots()
-    width = 0.35
     x = np.arange(len(true_probs))
+    width = 0.35
 
+    fig, ax = plt.subplots()
     ax.bar(x - width / 2, ss.human_metrics.pulls, width, label="Human")
     ax.bar(x + width / 2, ss.agent_metrics.pulls, width, label="Agent")
 
@@ -87,3 +81,17 @@ def render_visuals():
     ax.set_title("Regret Over Time")
     ax.legend()
     st.pyplot(fig)
+
+    # ----------------------------
+    # Leaderboard
+    # ----------------------------
+    st.subheader("🏆 Leaderboard (Final Scores)")
+
+    leaderboard = get_sorted_leaderboard()
+
+    if leaderboard:
+        df = pd.DataFrame(leaderboard)
+        df.index += 1
+        st.table(df)
+    else:
+        st.info("Waiting for all players to finish…")
