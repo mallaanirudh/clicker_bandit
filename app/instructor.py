@@ -27,6 +27,25 @@ def render_instructor_panel():
             end_session()
             st.warning("Session ended manually.")
 
+    # ----------------------------
+    # Danger Zone
+    # ----------------------------
+    st.markdown("---")
+    with st.expander("☠️ Danger Zone"):
+        st.caption("Reset the leaderboard. This cannot be undone.")
+        
+        from app.leaderboard import reset_leaderboard
+        
+        password = st.text_input("Admin Password", type="password")
+        
+        if st.button("Reset Leaderboard"):
+            if password == "admin123":
+                reset_leaderboard()
+                st.success("Leaderboard wiped successfully!")
+                st.rerun()
+            else:
+                st.error("Incorrect password!")
+
     # Status indicators
     st.markdown("---")
 

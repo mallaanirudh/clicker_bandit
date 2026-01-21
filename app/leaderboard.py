@@ -75,3 +75,7 @@ def get_sorted_leaderboard():
         key=lambda x: x["Score"],
         reverse=True
     )
+
+def reset_leaderboard():
+    """Wipe all data from the leaderboard file."""
+    _save_leaderboard({})
